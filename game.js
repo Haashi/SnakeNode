@@ -17,7 +17,7 @@ let velocityLookup = {
     40: { x: 0, y: 1 }
 };
 
-var socket = io.connect('http://192.168.1.37:8080');
+var socket = io.connect('http://localhost:8080');
 socket.on('gridSize', function(value) {
     gridSize=value;
 });
