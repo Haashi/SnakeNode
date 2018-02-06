@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Ma todolist</title>
+        <style>
+            a {text-decoration: none; color: black;}
+        </style>
+    </head>
+
+    <body>
+        <h1><%=tache %></h1>
+
+        <form action="/todo/rename/<%=index %>" method="post">
+            <p>
+                <label for="newname">Nouveau nom ?</label>
+                <input type="text" name="newname" id="newname" autofocus />
+                <input type="submit" />
+            </p>
+        </form>
+    </body>
+</html>
