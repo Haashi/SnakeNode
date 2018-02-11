@@ -44,6 +44,7 @@ window.onload = () => {
     canvas = document.getElementById("cnvs");
     context = canvas.getContext("2d");
     document.addEventListener("keydown", keyPush);
+    document.addEventListener("keyup", keyRelease);
     var txt;
     var person = prompt("Please enter your login:");
     if (person == null || person == "") {
@@ -66,3 +67,7 @@ let drawApple = ({ color, x, y }) => {
 let keyPush = (event) => {
     socket.emit('keyPush',event.keyCode);
 };
+
+let keyRelease = (event) =>{
+    socket.emit('keyRelease',event.keyCode);
+}
