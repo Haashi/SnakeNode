@@ -32,7 +32,7 @@ socket.on('players',function(players){
     context.fillStyle = "black";
     context.fillRect(0, 0, canvas.width, canvas.height);
     for(player in players){
-      context.fillStyle = "lime";
+      context.fillStyle = players[player].color;
       for (let i = 0; i < players[player].trail.length; i++) {
           context.fillRect(players[player].trail[i].x * gridSize, players[player].trail[i].y * gridSize, gridSize - 2, gridSize - 2);
       }
