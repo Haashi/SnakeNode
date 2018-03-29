@@ -5,9 +5,8 @@ let url = require('url');
 let path = require('path');
 
 let gridSize = 5;
-let tileCount = 100;
+let tileCount = 50;
 let players={};
-let apple = { color: "red", x: tileCount / 2 + 5, y: tileCount / 2 + 5 };
 let velocityLookup = {
     37: { x: -1, y: 0 },
     38: { x: 0, y: -1 },
@@ -15,6 +14,67 @@ let velocityLookup = {
     40: { x: 0, y: 1 }
 };
 let colors = ["magenta","lime","yellow","deeppink","aqua","snow"];
+let apples = [];
+let nbPlayer=0;
+
+let newApple=()=>{
+    let apple={ color: "red"};
+    Object.assign(apple, getRandomCoords(tileCount));
+    apples.push(apple);
+}
+
+let processTick = (player) => {
+    players[player].coords.x+=players[player].velocity.x;
+    players[player].coords.y+=players[player].velocity.y;
+    if (players[player].coords.x < 0) {
+        players[player].coords.x = tileCount - 1;
+    }
+    if (players[player].coords.x > tileCount - 1) {
+        players[player].coords.x = 0;
+    }
+    if (players[player].coords.y< 0) {
+        players[player].coords.y = tileCount - 1;
+    }
+    if (players[player].coords.y > tileCount - 1) {
+        players[player].coords.y = 0;
+    }
+    for (let i = 0; i < players[player].trail.length; i++) {
+        if (players[player].trail[i].x === players[player].coords.x && players[player].trail[i].y === players[player].coords.y) {
+            players[player].tail = 2;
+            players[player].coords = getRandomCoords(tileCount);
+        }
+        for(player2 in players){
+            if(player===player2){
+                continue;
+            }
+            for(let i = 0; i < players[player2].trail.length; i++){
+                if (players[player2].trail[i].x === players[player].coords.x && players[player2].trail[i].y === players[player].coords.y) {
+                    players[player2].tail += players[player].tail/2;
+                    players[player].tail = 2;
+                    players[player].coords = getRandomCoords(tileCount);
+                } 
+            }
+            if(players[player2].coords.x===players[player].coords.x && players[player2].coords.y === players[player].coords.y){
+                players[player].tail = 2;
+                players[player].coords = getRandomCoords(tileCount);
+                players[player2].tail = 2;
+                players[player2].coords = getRandomCoords(tileCount);
+            }
+        }
+    }
+
+    players[player].trail.push({ x: players[player].coords.x, y: players[player].coords.y });
+
+    while (players[player].trail.length > players[player].tail) {
+        players[player].trail.shift();
+    }
+    for(apple in apples){
+        if (apples[apple].x === players[player].coords.x && apples[apple].y === players[player].coords.y) {
+            players[player].tail++;
+            apples.splice(apple,1);
+        }
+    }
+}
 
 let getRandomColor = () => {
     let x = Math.floor(Math.random()*colors.length);
@@ -23,7 +83,30 @@ let getRandomColor = () => {
 let getRandomCoords = (boundary) => {
     let x = Math.floor(Math.random() * boundary);
     let y = Math.floor(Math.random() * boundary);
-    return { x: x, y: y };
+    let ok=true;
+    for(player in players){
+        for (let i = 0; i < players[player].trail.length; i++) {
+            if(players[player].trail[i].x===x&&players[player].trail[i].y===y){
+                ok=false;
+                break;
+            }
+        }
+        if(!ok){
+            break;
+        }
+    }
+    if(ok){
+        for(apple in apples){
+            if(apples[apple].x===x&&apples[apple].y===y){
+                ok=false;
+                break;
+            }
+        }
+    }
+    if(ok){
+        return { x: x, y: y };
+    }
+    return getRandomCoords(boundary);
 };
 
 let getRandomVelo = () => {
@@ -92,7 +175,9 @@ io.sockets.on('connection', function (socket) {
     
     socket.on('disconnect', function() {
         if(socket.handshake.session!==undefined){
+            nbPlayer--;
             delete players[socket.handshake.session.userdata];
+            changeAppleSpawnRate();
         }
     });
 
@@ -101,9 +186,11 @@ io.sockets.on('connection', function (socket) {
         let coords=getRandomCoords(tileCount);
         let velocity=getRandomVelo();
         let color=getRandomColor();
+        nbPlayer++;
         players[userdata] = {coords, velocity:velocity ,trail:[],tail:2,color};
         socket.handshake.session.userdata = userdata;
         socket.handshake.session.save();
+        changeAppleSpawnRate();
       }
     });
 
@@ -143,113 +230,35 @@ let game = () => {
             if(players[player].sprint){
                 if(players[player].tail>2){
                     players[player].sprinted++;
-                    players[player].coords.x+=players[player].velocity.x;
-                    players[player].coords.y+=players[player].velocity.y;
-                    if (players[player].coords.x < 0) {
-                        players[player].coords.x = tileCount - 1;
-                    }
-                    if (players[player].coords.x > tileCount - 1) {
-                        players[player].coords.x = 0;
-                    }
-                    if (players[player].coords.y< 0) {
-                        players[player].coords.y = tileCount - 1;
-                    }
-                    if (players[player].coords.y > tileCount - 1) {
-                        players[player].coords.y = 0;
-                    }
                     if(players[player].sprinted%10==0){
                         players[player].tail--;
                         players[player].sprinted=0;
                     }
-                    for (let i = 0; i < players[player].trail.length; i++) {
-                        if (players[player].trail[i].x === players[player].coords.x && players[player].trail[i].y === players[player].coords.y) {
-                            players[player].tail = 2;
-                            players[player].coords = getRandomCoords(tileCount);
-                        }
-                        for(player2 in players){
-                            if(player===player2){
-                                continue;
-                            }
-                            for(let i = 0; i < players[player2].trail.length; i++){
-                                if (players[player2].trail[i].x === players[player].coords.x && players[player2].trail[i].y === players[player].coords.y) {
-                                    players[player2].tail += players[player].tail;
-                                    players[player].tail = 2;
-                                    players[player].coords = getRandomCoords(tileCount);
-                                } 
-                            }
-                            if(players[player2].coords.x===players[player].coords.x && players[player2].coords.y === players[player].coords.y){
-                                players[player].tail = 2;
-                                players[player].coords = getRandomCoords(tileCount);
-                                players[player2].tail = 2;
-                                players[player2].coords = getRandomCoords(tileCount);
-                            }
-                        }
-                    }
-        
-                    players[player].trail.push({ x: players[player].coords.x, y: players[player].coords.y });
-            
-                    while (players[player].trail.length > players[player].tail) {
-                        players[player].trail.shift();
-                    }
-                    if (apple.x === players[player].coords.x && apple.y === players[player].coords.y) {
-                        players[player].tail++;
-                        Object.assign(apple, getRandomCoords(tileCount));
-                    }
+                    processTick(player);
                 }
             }
         }
-        players[player].coords.x+=players[player].velocity.x;
-        players[player].coords.y+=players[player].velocity.y;
-        if (players[player].coords.x < 0) {
-            players[player].coords.x = tileCount - 1;
-        }
-        if (players[player].coords.x > tileCount - 1) {
-            players[player].coords.x = 0;
-        }
-        if (players[player].coords.y< 0) {
-            players[player].coords.y = tileCount - 1;
-        }
-        if (players[player].coords.y > tileCount - 1) {
-            players[player].coords.y = 0;
-        }
-        for (let i = 0; i < players[player].trail.length; i++) {
-            if (players[player].trail[i].x === players[player].coords.x && players[player].trail[i].y === players[player].coords.y) {
-                players[player].tail = 2;
-                players[player].coords = getRandomCoords(tileCount);
-            }
-            for(player2 in players){
-                if(player===player2){
-                    continue;
-                }
-                for(let i = 0; i < players[player2].trail.length; i++){
-                    if (players[player2].trail[i].x === players[player].coords.x && players[player2].trail[i].y === players[player].coords.y) {
-                        players[player2].tail += players[player].tail;
-                        players[player].tail = 2;
-                        players[player].coords = getRandomCoords(tileCount);
-                    } 
-                }
-                if(players[player2].coords.x===players[player].coords.x && players[player2].coords.y === players[player].coords.y){
-                    players[player].tail = 2;
-                    players[player].coords = getRandomCoords(tileCount);
-                    players[player2].tail = 2;
-                    players[player2].coords = getRandomCoords(tileCount);
-                }
-            }
-        }
-
-        players[player].trail.push({ x: players[player].coords.x, y: players[player].coords.y });
-
-        while (players[player].trail.length > players[player].tail) {
-            players[player].trail.shift();
-        }
-        if (apple.x === players[player].coords.x && apple.y === players[player].coords.y) {
-            players[player].tail++;
-            Object.assign(apple, getRandomCoords(tileCount));
-        } 
-        
+        processTick(player); 
     }
     io.local.emit('players',players);
-    io.local.emit('apple',apple);
+    io.local.emit('apples',apples);
 };
 
-setInterval(game, 1000 / (20));
+setInterval(game, 1000/(15));
+
+let spawnRate;
+
+let changeAppleSpawnRate= ()=>{
+    console.log(nbPlayer);
+    if(nbPlayer>0){
+        if(spawnRate!==undefined){
+            clearInterval(spawnRate);
+        }
+        spawnRate=setInterval(newApple, 3000/(nbPlayer));
+    }
+    else{
+        if(spawnRate!==undefined){
+            clearInterval(spawnRate);
+        }
+    }
+}
