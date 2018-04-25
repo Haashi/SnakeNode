@@ -5,7 +5,7 @@ let url = require('url');
 let path = require('path');
 
 let gridSize = 5;
-let tileCount = 50;
+let tileCount = 60;
 let players={};
 let velocityLookup = {
     37: { x: -1, y: 0 },
@@ -175,9 +175,11 @@ io.sockets.on('connection', function (socket) {
     
     socket.on('disconnect', function() {
         if(socket.handshake.session!==undefined){
-            nbPlayer--;
+            if(players[socket.handshake.session.userdata]!==undefined){
+                nbPlayer--;
+                changeAppleSpawnRate();
+            }
             delete players[socket.handshake.session.userdata];
-            changeAppleSpawnRate();
         }
     });
 
