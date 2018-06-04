@@ -1,8 +1,12 @@
+let fs=require('fs')
 let express = require('express');
 let socket = require('socket.io');
-let http = require('http');
+let https = require('https');
 let url = require('url');
 let path = require('path');
+let privateKey = fs.readFileSync('private/private.key','utf8');
+let certificate = fs.readFileSync('private/certificate.crt','utf8');
+let credentials = {key: privateKey, cert: certificate};
 
 let gridSize = 5;
 let tileCount = 60;
@@ -131,7 +135,7 @@ let getVelocityFromDirection = (keyCode) => {
 
 let app = express();
 
-let server = http.createServer(app);
+let server = https.createServer(credentials,app);
 
 let session = require("express-session")({
     secret: "my-secret",
@@ -165,7 +169,8 @@ app.use(function(req, res, next){
   res.sendFile(path.join(__dirname, page), {gridSize: gridSize, tileCount:tileCount});
 })
 
-server.listen(8080);
+server.listen(8443, function(){
+console.log('listening')});
 
 io.use(sharedsession(session, {
     autoSave:true
@@ -207,7 +212,7 @@ io.sockets.on('connection', function (socket) {
       if(keyPush==32){
           players[socket.handshake.session.userdata].sprint=true;
       }
-      if(keyPush>=37 && keyPush<=40 && players[socket.handshake.session.userdata]!==undefined){
+      if((keyPush>=37 && keyPush<=40)&& players[socket.handshake.session.userdata]!==undefined){
         newvelocity=getVelocityFromDirection(keyPush);
         if(players[socket.handshake.session.userdata].velocity.x*newvelocity.x==-1 || players[socket.handshake.session.userdata].velocity.y*newvelocity.y==-1 || players[socket.handshake.session.userdata].velocity.canChange==false){
 
@@ -242,8 +247,7 @@ let game = () => {
         }
         processTick(player); 
     }
-    io.local.emit('players',players);
-    io.local.emit('apples',apples);
+    io.local.emit('game',{players:players,apples:apples});
 };
 
 setInterval(game, 1000/(15));
@@ -263,4 +267,5 @@ let changeAppleSpawnRate= ()=>{
             clearInterval(spawnRate);
         }
     }
+
 }

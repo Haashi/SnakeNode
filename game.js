@@ -18,19 +18,14 @@ let velocityLookup = {
     40: { x: 0, y: 1 }
 };
 
-var socket = io.connect('http://haashi.fr:8080');
+var socket = io.connect('https://haashi.fr:8080',{secure: true});
 socket.on('gridSize', function(value) {
     gridSize=value;
 });
 socket.on('tileCount', function(value) {
     tileCount=value;
 });
-socket.on('apples',function(apples){
-    for(apple in apples){
-        drawApple(apples[apple]);
-    }
-})
-socket.on('players',function(players){
+socket.on('game',function({players:players,apples:apples}){
     me = players[userdata];
     if(me===undefined){
         context.fillStyle = "black";
@@ -82,7 +77,9 @@ socket.on('players',function(players){
             }
         }
     }
-    
+    for(apple in apples){
+        drawApple(apples[apple]);
+    }
 })
 
 window.onload = () => {
