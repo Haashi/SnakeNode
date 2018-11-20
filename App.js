@@ -10,9 +10,15 @@ let tileCount = 60;
 let players={};
 let velocityLookup = {
     37: { x: -1, y: 0 },
+    81: { x: -1, y: 0 },
+    65: { x: -1, y: 0 },
     38: { x: 0, y: -1 },
+    90: { x: 0, y: -1 },
+    87: { x: 0, y: -1 },
     39: { x: 1, y: 0 },
-    40: { x: 0, y: 1 }
+    68: { x: 1, y: 0 },
+    40: { x: 0, y: 1 },
+    83: { x: 0, y: 1 }
 };
 let bodyParser = require('body-parser');
 let colors = ["magenta","lime","yellow","deeppink","aqua","snow"];
@@ -216,7 +222,7 @@ io.sockets.on('connection', function (socket) {
       if(keyPush==32){
           players[socket.handshake.session.userdata].sprint=true;
       }
-      if((keyPush>=37 && keyPush<=40)&& players[socket.handshake.session.userdata]!==undefined){
+      if(((keyPush>=37 && keyPush<=40)||(keyPush===65||keyPush===87||keyPush===81||keyPush===85||keyPush===90||keyPush===68||keyPush===83)&& players[socket.handshake.session.userdata]!==undefined)){
         newvelocity=getVelocityFromDirection(keyPush);
         if(players[socket.handshake.session.userdata].velocity.x*newvelocity.x==-1 || players[socket.handshake.session.userdata].velocity.y*newvelocity.y==-1 || players[socket.handshake.session.userdata].velocity.canChange==false){
 
@@ -275,7 +281,7 @@ let changeAppleSpawnRate= ()=>{
 }
 
 function deploy(res){
-    res.send(200);
+    res.sendStatus(200);
     childProcess.exec('cd /opt/SnakeNode && ./deploy.sh', function(err, stdout, stderr){
       });
 }
