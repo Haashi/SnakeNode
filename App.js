@@ -275,11 +275,7 @@ let changeAppleSpawnRate= ()=>{
 }
 
 function deploy(res){
+    res.send(200);
     childProcess.exec('cd /opt/SnakeNode && ./deploy.sh', function(err, stdout, stderr){
-        if (err) {
-         console.error(err);
-         return res.send(500);
-        }
-        res.send(200);
       });
 }
