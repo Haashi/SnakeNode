@@ -2,7 +2,7 @@ cd /opt/SnakeNode
 
 echo "Pulling from Master" 
 
-#git pull origin master
+git pull origin master
 
 echo "Pulled successfully from master"
 
