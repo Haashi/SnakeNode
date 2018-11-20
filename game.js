@@ -18,7 +18,7 @@ let velocityLookup = {
     40: { x: 0, y: 1 }
 };
 
-var socket = io.connect('https://haashi.fr:8080',{secure: true});
+var socket = io.connect('https://snake.haashi.fr');
 socket.on('gridSize', function(value) {
     gridSize=value;
 });

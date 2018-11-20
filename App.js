@@ -1,13 +1,10 @@
 let fs=require('fs')
 let express = require('express');
 let socket = require('socket.io');
-let https = require('https');
+let http = require('http');
 let url = require('url');
 let path = require('path');
-let privateKey = fs.readFileSync('private/private.key','utf8');
-let certificate = fs.readFileSync('private/certificate.crt','utf8');
-let credentials = {key: privateKey, cert: certificate};
-
+var childProcess = require('child_process');
 let gridSize = 5;
 let tileCount = 60;
 let players={};
@@ -17,6 +14,7 @@ let velocityLookup = {
     39: { x: 1, y: 0 },
     40: { x: 0, y: 1 }
 };
+let bodyParser = require('body-parser');
 let colors = ["magenta","lime","yellow","deeppink","aqua","snow"];
 let apples = [];
 let nbPlayer=0;
@@ -135,7 +133,9 @@ let getVelocityFromDirection = (keyCode) => {
 
 let app = express();
 
-let server = https.createServer(credentials,app);
+app.use(bodyParser.json());
+
+let server = http.createServer(app);
 
 let session = require("express-session")({
     secret: "my-secret",
@@ -160,6 +160,10 @@ app.use(function(req, res, next){
   next();
 })
 
+.post("/webhooks/github", function (req, res) {
+        deploy(res);
+})
+
 .get('/',function(req,res){
   res.render('index.ejs', {gridSize: gridSize,tileCount: tileCount});
 })
@@ -169,7 +173,7 @@ app.use(function(req, res, next){
   res.sendFile(path.join(__dirname, page), {gridSize: gridSize, tileCount:tileCount});
 })
 
-server.listen(8443, function(){
+server.listen(21035, function(){
 console.log('listening')});
 
 io.use(sharedsession(session, {
@@ -268,4 +272,14 @@ let changeAppleSpawnRate= ()=>{
         }
     }
 
+}
+
+function deploy(res){
+    childProcess.exec('cd /opt/SnakeNode && ./deploy.sh', function(err, stdout, stderr){
+        if (err) {
+         console.error(err);
+         return res.send(500);
+        }
+        res.send(200);
+      });
 }
